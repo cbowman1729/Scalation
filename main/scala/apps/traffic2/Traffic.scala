@@ -123,7 +123,7 @@ object TrafficOptI extends App
     var functionCallCount = 0
     var runReplicasCount  = 0
 
-    val x0 = VectorD (5, 300, 2, 30)    // (NWGreen, EWGreen, turn, offset)
+    val x0 = VectorI (5, 300, 2, 30)    // (NWGreen, EWGreen, turn, offset)
     val xs = VectorD (2.0, 2.0, 2.0, 2.0)
 
     val intOffsets = Array.ofDim [Double] (4)
@@ -427,7 +427,7 @@ object TrafficOpt extends App
 
         val w = (.5, .5)
 
-        val res = w._1 * through.mean * through.mean + w._2 * diff                     // w._1 * sumV / sumK
+        val res = w._1 * sumV / sumK + w._2 * diff                     // w._1 * through.mean * through.mean
 //        println (":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
         println (counter + ":\tx = " + x + ", f(x) = " + res)
         res
@@ -784,23 +784,12 @@ class TrafficModel (name: String, nArrivals: Int, iArrRVs: Tuple2 [Variate, Vari
 
 //    println ("n2Release = " + n2Release)
 
-//    println ("n2Release = " + n2Release)
-
-    for (gate <- i1.light) gate.n2Release = n2Release 
-    
-    for (gate <- i2.light) gate.n2Release = n2Release
-
-    for (gate <- i3.light) gate.n2Release = n2Release
-
-//    for (gate <- i4.light) gate.n2Release = n2Release
-
-    for (gate <- i1.turnLight) gate.n2Release = n2Release 
-    
-    for (gate <- i2.turnLight) gate.n2Release = n2Release
-
-    for (gate <- i3.turnLight) gate.n2Release = n2Release
-
-//    for (gate <- i4.turnLight) gate.n2Release = n2Release
+    for (gate <- i1.light)     { gate.n2Release = n2Release; gate.ServiceTime = Sharp (5.0) }     
+    for (gate <- i2.light)     { gate.n2Release = n2Release; gate.ServiceTime = Sharp (5.0) }
+    for (gate <- i3.light)     { gate.n2Release = n2Release; gate.ServiceTime = Sharp (5.0) }
+    for (gate <- i1.turnLight) { gate.n2Release = n2Release; gate.ServiceTime = Sharp (5.0) }
+    for (gate <- i2.turnLight) { gate.n2Release = n2Release; gate.ServiceTime = Sharp (5.0) }
+    for (gate <- i3.turnLight) { gate.n2Release = n2Release; gate.ServiceTime = Sharp (5.0) }
 
     def nextSink (r: Route): Sink = r.to.asInstanceOf [Sink]
 

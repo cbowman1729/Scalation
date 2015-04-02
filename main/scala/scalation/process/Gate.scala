@@ -108,16 +108,21 @@ class Gate (name: String, director: Model, line: WaitQueue, units: Int,
     {
         var count = 0
         var duration = 0.0
-        if (ServiceTime != null) duration = ServiceTime.gen
-        tally (n2Release * duration)
-        breakable { for (i <- 0 to n2Release) {
-            if (line.isEmpty) break
+//        if (ServiceTime != null) duration = ServiceTime.gen
+//        tally (n2Release * duration)
+//        breakable { for (i <- 0 to n2Release) {
+        while (gateColor == green && ! line.isEmpty) {
             val actor = director.theActor
             trace (this, "releases", actor, director.clock)
             val waitingActor = line.dequeue ()
             count += 1            
-            waitingActor.schedule (i * 500.0)
-        }} // for
+//            if (i < n2Release) {
+            if (ServiceTime != null) duration = ServiceTime.gen
+            tally (duration)
+            schedule (duration)                  
+            yieldToDirector ()
+//            }
+        } // while
     } // release
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::

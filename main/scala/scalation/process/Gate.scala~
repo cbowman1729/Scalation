@@ -35,7 +35,7 @@ import util.control.Breaks.{breakable, break}
 class Gate (name: String, director: Model, line: WaitQueue, units: Int, 
             private var onTime: Variate, private var offTime: Variate,
             at: Array [Double], offset1: Double = 0.0, offset2: Double, shut0: Boolean = false, 
-            cap: Int = 10, _redirect: Component = null, ServiceTime: Variate = null)
+            cap: Int = 10, _redirect: Component = null)
       extends SimActor (name, director) with Component
 {
     if (line == null) flaw ("constructor", "must have line for entities when gate is closed")
@@ -54,6 +54,8 @@ class Gate (name: String, director: Model, line: WaitQueue, units: Int,
     private var _controller = -1;
 
     var num = 0;
+
+    var ServiceTime: Variate = null
 
     var n2Release = cap
  
@@ -105,14 +107,22 @@ class Gate (name: String, director: Model, line: WaitQueue, units: Int,
     def release ()
     {
         var count = 0
-        breakable { for (i <- 0 to n2Release) {
-            if (line.isEmpty) break
+        var duration = 0.0
+//        if (ServiceTime != null) duration = ServiceTime.gen
+//        tally (n2Release * duration)
+//        breakable { for (i <- 0 to n2Release) {
+        while (gateColor == green && ! line.isEmpty) {
             val actor = director.theActor
             trace (this, "releases", actor, director.clock)
             val waitingActor = line.dequeue ()
             count += 1            
-            waitingActor.schedule (i * 500.0)
-        }} // for
+            if (i < n2Release) {
+                if (ServiceTime != null) duration = ServiceTime.gen
+                tally (duration)
+                schedule (duration)                  
+                yieldToDirector ()
+            }
+        } // while
     } // release
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
