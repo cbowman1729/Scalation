@@ -1,0 +1,64 @@
+
+//:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+/** @author   Casey Bowman
+ *  @version  1.1
+ *  @date     Tue Mar 31 16:35:33 EDT 2015 
+ *  @see      (License) MIT style license
+ */
+
+package apps.traffic2
+
+object TrafficCalc              
+{
+    val MetersPerMile = 1609.34
+    val MpsPerMph     = 0.44704
+    val zeroTo60      = 9.0
+
+    def milesToMeters (distance: Double = 0.3): Double = distance * MetersPerMile
+
+    def mphToMps (fullSpeed: Double = 60.0): Double = fullSpeed * MpsPerMph
+
+    def rampDist (fullSpeed: Double = 60.0): Double = mphToMps (fullSpeed) * 0.5 * rampTime (fullSpeed)
+
+    def effSpeed (fullSpeed: Double = 60.0, distance: Double = 0.3): Double = 
+        mphToMps (fullSpeed) * (1.0 - 0.5 * rampDist (fullSpeed) / milesToMeters (distance))
+
+    def rampTime (fullSpeed: Double = 60.0) = zeroTo60 * fullSpeed / 30.0
+
+    def timeRed (fullSpeed: Double = 60.0, distance: Double = 0.3): Double =
+        milesToMeters (distance) / effSpeed (fullSpeed, distance) 
+
+    def timeGreen (fullSpeed: Double = 60.0, distance: Double = 0.3): Double = 
+        milesToMeters (distance) / mphToMps (fullSpeed)
+
+    def print (speed: Double = 60.0) 
+    {
+        println ("rampTime  = " + rampTime  (speed))        
+        println ("rampDist  = " + rampDist  (speed))
+        println ("fullSpeed = " + mphToMps  (speed))
+        println ("effSpeed  = " + effSpeed  (speed))
+        println ("timeGreen = " + timeGreen (speed))
+        println ("timeRed   = " + timeRed   (speed))
+    }
+
+    def printE (speed: Double = 60.0)
+    {
+        println ("rampTime  = " + rampTime  (speed))
+        println ("rampDist  = " + rampDist  (speed) / MetersPerMile)
+        println ("fullSpeed = " + mphToMps  (speed) / MpsPerMph)
+        println ("effSpeed  = " + effSpeed  (speed) / MpsPerMph)
+        println ("timeGreen = " + timeGreen (speed))
+        println ("timeRed   = " + timeRed   (speed))
+    }
+
+//    print  (50.0)
+//    println ()
+//    printE (50.0)
+    
+} // TrafficCalc
+
+object TrafficCalcTest extends App
+{
+    println (TrafficCalc.timeRed ())
+}
+
