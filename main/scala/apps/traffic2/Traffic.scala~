@@ -108,8 +108,8 @@ object CreateQuadraticFit extends App
 
 object TrafficOptI extends App
 {
-    //    val iArrRVs = (Exponential (8.0), Exponential (4.0))
-    val iArrRVs = (Sharp (3.0), Sharp (6.0))
+    val iArrRVs = (Exponential (8.0), Exponential (4.0))
+//    val iArrRVs = (Sharp (3.0), Sharp (6.0))
 
     val REPS = 2
     val out   = new MatrixD (REPS, 1)
@@ -195,16 +195,16 @@ object TrafficOptI extends App
 
         tm.complete ()
 
-        val through = new StatVector (tm.gateNums.size)
-        var j = 0
-        for ((key,value) <- tm.gateNums) {
-            through(j) = value
-            j += 1
-        }
+//        val through = new StatVector (tm.gateNums.size)
+//        var j = 0
+//        for ((key,value) <- tm.gateNums) {
+//            through(j) = value
+//            j += 1
+//        }
 
 //        println ("throughput = " + through)
-        println ("stddev = " + through.stddev)
-        println ("mean   = " + through.mean)
+//        println ("stddev = " + through.stddev)
+//        println ("mean   = " + through.mean)
 
         val sq      = tm.statV.filter{ case (key, value) => key contains "q"      }.map { case (key, value) => value(0) }
         val nq      = tm.statN.filter{ case (key, value) => key contains "q"      }.map { case (key, value) => value(0) }
@@ -231,7 +231,7 @@ object TrafficOptI extends App
 
         val w = (.5, .5)
 
-        val res = w._1 * through.mean * through.mean + w._2 * diff                     // w._1 * sumV / sumK
+        val res = w._1 * sumV / sumK + w._2 * diff                     // w._1 * through.mean
 //        println (":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
         println (counter + ":\tx = " + x + ", f(x) = " + res)
         res
@@ -258,8 +258,8 @@ object TrafficOpt extends App
 
 //    val fw = new FileWriter ("responses.txt", true)
 
-//    val iArrRVs = (Exponential (8.0), Exponential (4.0))
-    val iArrRVs = (Sharp (3.0), Sharp (6.0))
+    val iArrRVs = (Exponential (0.05), Exponential (.1))
+//    val iArrRVs = (Sharp (3.0), Sharp (6.0))
 
     val REPS = 2
     val out   = new MatrixD (REPS, 1)
@@ -336,7 +336,9 @@ object TrafficOpt extends App
 //    val solution  = optimizer.solve (x0)
 //    println ("x = " + solution + ", f(x) = " + f(solution))
 
-    for (i <- 2 to 60) f(VectorD(i, i, i / 2.0, i))    
+//    for (i <- 2 to 60) f(VectorD(i, i, i / 2.0, i))    
+
+   f (VectorD (40.0, 40.0, 20.0, 20.0))
 
     def ff (x: VectorD): Double = 
     {      
@@ -377,30 +379,30 @@ object TrafficOpt extends App
         onTurnTimeRV (3) = Sharp (turn)
         offTurnTimeRV(3) = Sharp (NSGrn + EWGrn + turn)      
 
-        val stopTime = 1000.0
+        val stopTime = 100.0
 
-        val tm = new TrafficModel ("Traffic Model" + counter, 10000, iArrRVs, 
+        val tm = new TrafficModel ("Traffic Model" + counter, 100, iArrRVs, 
                                    onTimeRV, offTimeRV, onTurnTimeRV, offTurnTimeRV,
                                    Uniform (20, 30), intOffsets, mainOffsets,
                                    turnOffsets)
         tm.setStopTime (stopTime)
-//        Coroutine.startup ()
+        Coroutine.startup ()
         tm.simulate (0.0)               
-//        val lps = Coroutine.shutdown ()
-//        println ("lps = " + lps)
+        val lps = Coroutine.shutdown ()
+        println ("lps = " + lps)
 
         tm.complete ()
 
-        val through = new StatVector (tm.gateNums.size)
-        var j = 0
-        for ((key,value) <- tm.gateNums) {
-            through(j) = value
-            j += 1
-        }
+//        val through = new StatVector (tm.gateNums.size)
+//        var j = 0
+//        for ((key,value) <- tm.gateNums) {
+//            through(j) = value
+//            j += 1
+//        }
 
-        println ("throughput = " + through)
-        println ("stddev = " + through.stddev)
-        println ("mean   = " + through.mean)
+//        println ("throughput = " + through)
+//        println ("stddev = " + through.stddev)
+//        println ("mean   = " + through.mean)
 
         val sq      = tm.statV.filter{ case (key, value) => key contains "q"      }.map { case (key, value) => value(0) }
         val nq      = tm.statN.filter{ case (key, value) => key contains "q"      }.map { case (key, value) => value(0) }
@@ -427,7 +429,7 @@ object TrafficOpt extends App
 
         val w = (.5, .5)
 
-        val res = w._1 * through.mean * through.mean + w._2 * diff                     // w._1 * sumV / sumK
+        val res = w._1 * sumV / sumK + w._2 * diff                     // w._1 * through.mean * through.mean
 //        println (":::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::")
         println (counter + ":\tx = " + x + ", f(x) = " + res)
         res
@@ -678,7 +680,7 @@ class TrafficModel (name: String, nArrivals: Int, iArrRVs: Tuple2 [Variate, Vari
                          onTurnTimeRV: Array [Variate], offTurnTimeRV: Array [Variate], 
                          moveRV: Variate, intOffsets: Array[Double], 
                          mainOffsets: Array[Double], turnOffsets: Array[Double])
-      extends Model (name, reps = 3, animating = false)
+      extends Model (name, reps = 1, aniRatio = 30.0, animating = true)
 {
 
     val left = 0
@@ -687,7 +689,7 @@ class TrafficModel (name: String, nArrivals: Int, iArrRVs: Tuple2 [Variate, Vari
 
     val right = 2
 
-    _reportsOff = true
+//    _reportsOff = true
     traceOff ()
 
     val rng  = Bernoulli ()
@@ -725,14 +727,14 @@ class TrafficModel (name: String, nArrivals: Int, iArrRVs: Tuple2 [Variate, Vari
 
     addComponents (parts)        
 
-    val gateNums: Map [Gate, Int] = Map ()
+//    val gateNums: Map [Gate, Int] = Map ()
 
-    for (gate <- i1.light)     gateNums += (gate -> 0)
-    for (gate <- i2.light)     gateNums += (gate -> 0)
-    for (gate <- i3.light)     gateNums += (gate -> 0)
-    for (gate <- i1.turnLight) gateNums += (gate -> 0)
-    for (gate <- i2.turnLight) gateNums += (gate -> 0)
-    for (gate <- i3.turnLight) gateNums += (gate -> 0)
+//    for (gate <- i1.light)     gateNums += (gate -> 0)
+//    for (gate <- i2.light)     gateNums += (gate -> 0)
+//    for (gate <- i3.light)     gateNums += (gate -> 0)
+//    for (gate <- i1.turnLight) gateNums += (gate -> 0)
+//    for (gate <- i2.turnLight) gateNums += (gate -> 0)
+//    for (gate <- i3.turnLight) gateNums += (gate -> 0)
 
     def _fourthf (x: Double): Double = 0.25
 
@@ -803,12 +805,12 @@ class TrafficModel (name: String, nArrivals: Int, iArrRVs: Tuple2 [Variate, Vari
             val i = subtype                      // from North (0), East (1), South (2), West (3)
             val l = rng.igen                     // select lane l
             var r = firstRoad (this)             // first road
-//            r.lane(l).jump ()
+//            r.lane(l).jump (TrafficCalc.timeGreen ())
             r.lane(l).move (TrafficCalc.timeGreen ())
             while (!isNextSink (r)) {
                 val dir = r.select
                 val nextlight = nextLight (r, dir)
-                gateNums(nextlight._1) += 1
+//                gateNums(nextlight._1) += 1
                 dir match {
                     case `left`     => stopped = true; if (nextlight._1.shut) nextQueue(r, dir).waitIn 
                     case `straight` => if (nextlight._1.shut) { nextQueue(r, dir).waitIn; stopped = true }

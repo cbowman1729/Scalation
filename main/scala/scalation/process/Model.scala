@@ -29,7 +29,7 @@ import scalation.util.Monitor.trace
  *  controls the flow of entities (SimActors) through the model, following the
  *  process-interaction world-view.  It maintains a time-ordered priority queue
  *  to activate/re-activate each of the entities.  Each entity (SimActor) is
- *  implemeneted as a Scala Actor and may be thought of as running in its own thread.
+ *  implemented as a Scala Actor and may be thought of as running in its own thread.
  *  @param name       the name of the model
  *  @param reps       the number of independent replications to run
  *  @param aniRatio   the ratio of simulation speed vs. animation speed
@@ -130,9 +130,9 @@ class Model (name: String, val reps: Int = 1, animating: Boolean = true, aniRati
         while (! agenda.isEmpty) {                                   // clean out actors from agenda
             val a = agenda.dequeue ()
 //          if (! a.isInstanceOf [Source]) a.interrupt ()            // only terminate regular actors
-            if (! a.isInstanceOf [Source] && ! a.isInstanceOf [Gate]) {  
-                a.mySource.addZombie (a)  // zombie case
-            }
+//            if (! a.isInstanceOf [Source] && ! a.isInstanceOf [Gate]) {  
+//                a.mySource.addZombie (a)  // zombie case
+//            }
         } // while
 
         // reset stateful components
@@ -146,10 +146,15 @@ class Model (name: String, val reps: Int = 1, animating: Boolean = true, aniRati
                 while (! w.isEmpty) {
                     val a = w.dequeue ()
 //                  a.interrupt ()                                   // non zombie case
-                    a.mySource.addZombie (a)                         // zombie case
+//                    a.mySource.addZombie (a)                         // zombie case
                 } // while
             } // if
+            if (p.isInstanceOf [Gate]) {
+                val g = p.asInstanceOf [Gate]
+                reschedule (g)
+            }
         } // for
+
     } // reset
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -189,9 +194,9 @@ class Model (name: String, val reps: Int = 1, animating: Boolean = true, aniRati
         } // for
 
         simulating = true
-//        val future = start ()                                            // start the director thread/actor -> act ()
-//        future.get ()
-        start ()
+        val future = start ()                                            // start the director thread/actor -> act ()
+        future.get ()
+//        start ()
     } // simulate
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -204,31 +209,38 @@ class Model (name: String, val reps: Int = 1, animating: Boolean = true, aniRati
         if (DEBUG) {
             println ("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
             println ("Model.cleanup in progress")
-        }
+//        }
 
         while (! agenda.isEmpty) {                           // cleanup actors left on agenda
             val a = agenda.dequeue ()
-            if (a != this) {
-                if (DEBUG) println ("cleanup: terminate " + a)
-                a.interrupt ()                               // terminate all actors, except director
+//            if (a != this) {
+//                if (DEBUG) println ("cleanup: terminate " + a)
+//		a.yyield (null, true)
+//              a.interrupt ()                               // terminate all actors, except director
             } // if
         } // while
 
         for (p <- parts) {
+
             if (p.isInstanceOf [WaitQueue]) {                // cleanup wait queues
                 val w = p.asInstanceOf [WaitQueue]
                 while (! w.isEmpty) {
                     val a = w.dequeue ()
-                    a.interrupt ()                           // terminate all actors in queue
+//		    a.yyield (null, true)
+//                    a.interrupt ()                           // terminate all actors in queue
                 } // while
-            } // if
-
-            if (p.isInstanceOf [Source]) {                   // cleanup sources
+            } 
+/*          else if (p.isInstanceOf [Source]) {                   // cleanup sources
                 val s = p.asInstanceOf [Source]
-                s.cleanup ()                                 // terminate source's zombies
+//                s.cleanup ()                                 // terminate source's zombies
                 s.yyield (null, true)
-                s.interrupt ()                               // terminate source
-            } // if
+//                s.interrupt ()                               // terminate source
+            } else if (p.isInstanceOf [Coroutine]) {
+                val c = p.asInstanceOf [Coroutine]
+                c.yyield (null, true)
+                c.interrupt ()
+	    } // if
+		*/
         } // for
     } // cleanup
 
@@ -280,7 +292,7 @@ class Model (name: String, val reps: Int = 1, animating: Boolean = true, aniRati
 
         cleanup ()
 //        println ("statV = " + statV)
-        if (DEBUG) println ("coroutine counts = " + counts)
+        println ("coroutine counts = " + counts)
         trace (this, "terminates model", null, _clock)
         finished.release ()                                  // signal via semaphore that simulation is finished
         yyield (null, true)                                  // yield and terminate the director

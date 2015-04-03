@@ -27,12 +27,12 @@ abstract class Coroutine (label: String = "cor")
     import Coroutine._
 
     private val DEBUG     = false                  // debug flag
-    private val LIMIT     = 1000000                // maximum executions of act method
+    private val LIMIT     = 1000000000             // maximum executions of act method
     private val _sema     = new Semaphore (0)      // waiting semaphore
     private var alive     = true                   // whether this coroutine has not terminated
     private var started   = false                  // whether this coroutine has started
     private var _isZombie = false                  // whether this coroutine is a zombie
-    private val thr       = new Thread (this)      // thread to drive runnable coroutine
+    private var thr       = new Thread (this)      // thread to drive runnable coroutine
 
     nCreated += 1
     private val id = label + "." + nCreated
@@ -70,6 +70,7 @@ abstract class Coroutine (label: String = "cor")
             } // try
         } while (alive && i < LIMIT)
         nTerminated +=1
+        if (i == LIMIT) println ("************* LIMIT is exceded")
         if (DEBUG) println ("run: TERMINATE coroutine " + id)
     } // run
 
@@ -142,7 +143,10 @@ abstract class Coroutine (label: String = "cor")
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     /** Terminate this coroutine.
      */
-    private def terminate () { alive = false }
+    private def terminate () 
+    { 
+	alive = false
+    } // 
 
 } // Coroutine class
 
@@ -155,6 +159,7 @@ object Coroutine
     var nCreated = 0             // number of Coroutines created
     var nStarted = 0             // number of Coroutines started
     var nTerminated = 0          // number of Coroutines terminated
+    
 
 } // Coroutine companion object
 

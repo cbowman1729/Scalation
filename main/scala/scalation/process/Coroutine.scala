@@ -1,18 +1,20 @@
 
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-/** @author  John Miller
+/** @author  John Miller, Michael Cotterell
  *  @version 1.1
  *  @date    Sat Mar 21 20:34:23 EDT 2015
  *  @see     LICENSE (MIT style license file).
  *
  * Coroutine implementation options:
  * (1) Java Threads, (2) Scala Actors, (3) Akka Actors, (4) Scala Continuations
- * This one uses Java Threads.
+ * This one uses Java Threads and a Cached Thread Pool
  */
 
 package scalation.process
 
-import java.util.concurrent.Semaphore
+import java.util.concurrent.{Executors, ExecutorService, Future, Semaphore, ThreadPoolExecutor}
+
+import scalation.util.{Error, Identifiable}
 
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 /** The `Coroutine` class supports (one-at-a-time) quasi-concurrent programming.
@@ -22,17 +24,14 @@ import java.util.concurrent.Semaphore
  *  it may be restarted.
  */
 abstract class Coroutine (label: String = "cor")
-         extends Runnable
+         extends Runnable with Error
 {
     import Coroutine._
 
-    private val DEBUG     = false                  // debug flag
-    private val LIMIT     = 1000000000             // maximum executions of act method
     private val _sema     = new Semaphore (0)      // waiting semaphore
     private var alive     = true                   // whether this coroutine has not terminated
     private var started   = false                  // whether this coroutine has started
     private var _isZombie = false                  // whether this coroutine is a zombie
-    private val thr       = new Thread (this)      // thread to drive runnable coroutine
 
     nCreated += 1
     private val id = label + "." + nCreated
@@ -110,12 +109,14 @@ abstract class Coroutine (label: String = "cor")
     } // yyield
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-    /** Start this coroutine, i.e., invoke its 'run' -> 'act' method.
+    /** Start this coroutine, i.e., invoke its 'run' -> 'act' method. This
+     *  function returns a future.
      */
-    def start ()
+    def start (): Future [_] =
     {
         started = true
-        thr.start ()
+        if (pool == null) flaw ("start", "the coroutine system must be started using Coroutine.startup; expect undefined behavior.")
+        pool.submit (this)
     } // start
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -125,7 +126,7 @@ abstract class Coroutine (label: String = "cor")
     {
         if (_isZombie) {
             _isZombie = false
-            thr.interrupt ()
+            Thread.currentThread ().interrupt ()
         } else {
             if (DEBUG) println ("interrupt: only zombie coroutine may be interrupted")
         } // if
@@ -148,16 +149,64 @@ abstract class Coroutine (label: String = "cor")
 
 
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-/** The `Coroutine` companion object provides counters for the `Coroutine` class.
+/** The `Coroutine` companion object provides functions to startup and shutdown
+ *  the coroutine system as well as counters for the `Coroutine` class.
  */
-object Coroutine
+object Coroutine extends Error
 {
+    private val DEBUG                 = false // debug flag
+    private val LIMIT                 = 1     // maximum executions of act method
+    private val CORE_THREADS          = 0     // number of core threads
+    private val SHUTDOWN_TIMEOUT      = 60    // shutdown timout, in seconds
+    private var pool: ExecutorService = null  // thread pool
+
     var nCreated = 0             // number of Coroutines created
     var nStarted = 0             // number of Coroutines started
     var nTerminated = 0          // number of Coroutines terminated
 
-} // Coroutine companion object
+    /*
+    sys.addShutdownHook ({
+        pool.shutdown ()
+        pool.shutdownNow ()
+    })
+     */
 
+    private def threadPoolExecutor = pool.asInstanceOf [ThreadPoolExecutor]
+
+    //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    /** Startup the coroutine system. This function can also set the core 
+     *  number of threads for the internal cached thread pool.
+     *  @param nCoreThreads  the new core size 
+     */
+    def startup (nCoreThreads: Int = CORE_THREADS)
+    {
+        if (pool == null) {
+            pool = Executors.newCachedThreadPool ()
+            if (nCoreThreads != CORE_THREADS) threadPoolExecutor.setCorePoolSize (nCoreThreads)
+        } else {
+            flaw ("startup", "coroutine system is already started")
+        } // if
+    } // startup
+
+    //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    /** Shutdown the coroutine thread pool and return the largest number of
+     *  threads that have ever simultaneously been in the pool.
+     *  @return the number of threads  
+     */
+    def shutdown (): Int =
+    {
+        var lps = 0             // largest pool size
+        if (DEBUG) println ("Coroutine.shutdown")
+        if (pool != null) {
+            pool.shutdown ()    // prevent new submissions to pool
+            pool.shutdownNow () // interrupt all threads remaining in pool
+            lps  = threadPoolExecutor.getLargestPoolSize
+            pool = null
+        } else flaw ("shutdown", "coroutine system is already shutdown")
+        lps
+    } // shutdown
+
+} // Coroutine companion object
 
 //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 /** The `CoroutineTest` object is used to test the `Coroutine` class.
@@ -190,6 +239,8 @@ object CoroutineTest extends App
             yyield (null, true)
         } // act
     } // Cor2
+
+    Coroutine.startup ()
 
     val cor1 = new Cor1 ()
     val cor2 = new Cor2 ()

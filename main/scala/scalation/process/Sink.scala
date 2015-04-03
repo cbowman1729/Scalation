@@ -53,12 +53,12 @@ class Sink (name: String, at: Array [Double])
         trace (this, "terminates", actor, director.clock)
         director.animate (actor, MoveToken, null, null, Array (at(0) + DIAM, at(1) + at(3) / 2.0 - RAD))
 
-        if (actor.mySource != null) {
-            actor.mySource.addZombie (actor)      // turn actor into zombie and add to source's list
-            actor.yieldToDirector ()              // yield and do not terminate
-        } else {
-            actor.yieldToDirector (true)          // yield and terminate
-        } // if
+//        if (actor.mySource != null) {
+//            actor.mySource.addZombie (actor)      // turn actor into zombie and add to source's list
+//            actor.yieldToDirector ()              // yield and do not terminate
+//        } else {
+        actor.yieldToDirector (true)          // yield and terminate
+//        } // if
     } // leave
     
 } // Sink class

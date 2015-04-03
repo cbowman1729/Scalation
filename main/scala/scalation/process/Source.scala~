@@ -151,7 +151,7 @@ object Source
      *  @param units         the number of entities to make
      *  @param xy            the (x, y) coordinates for the top-left corner of the reference source.
      *  @param src           repeated source specific info: name, subtype, distribution, offset
-     */
+     
     def group (director: Model, makeEntity: () => SimActor, units: Int, xy: Tuple2 [Int, Int],
                src: Tuple4 [String, Int, Tuple2 [Variate, Variate], Tuple2 [Int, Int]]*): List [Source] =
     {
@@ -170,7 +170,7 @@ object Source
             
         sourceGroup.toList
     } // group
-
+*/
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     /** Create a group of related sources using defaults for width (w) and heigth (h).
      *  @param director      the director controlling the model

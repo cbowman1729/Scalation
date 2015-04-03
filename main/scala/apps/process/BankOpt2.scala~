@@ -50,9 +50,9 @@ object BankOpt2 extends App
             println ("---------------------------------------------------------------")
             bm = new BankModelOpt ("bank", nStop, Uniform (1000, 3000), tellers,
                                    Exponential (mu), Uniform (900, 1100))
-            Coroutine.startup ()
+//            Coroutine.startup ()
             bm.simulate ()
-            Coroutine.shutdown ()
+//            Coroutine.shutdown ()
             val waitTime = bm.getStatistics(2).mean
             c += cost._1 / mu + cost._2 * waitTime                    // return overall cost
         } // for

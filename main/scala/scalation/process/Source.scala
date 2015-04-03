@@ -40,7 +40,7 @@ class Source (name: String, director: Model, makeEntity: () => SimActor, subtype
 
     /** List holding SimActors that have left via a Sink.
      */
-    private val zombies = new ConcurrentLinkedQueue [SimActor] ()
+//    private val zombies = new ConcurrentLinkedQueue [SimActor] ()
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     /** Auxiliary constructor that uses defaults for width (w) and height (h).
@@ -60,9 +60,9 @@ class Source (name: String, director: Model, makeEntity: () => SimActor, subtype
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     /** Add a zombie actor to add to queue of zombies.
      *  @param z  the zombie actor to add to queue
-     */
+     
     def addZombie (z: SimActor) { z.zombify; zombies.add (z) }
-
+*/
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     /** Display this source as a node on the animation canvas.
      */
@@ -82,10 +82,10 @@ class Source (name: String, director: Model, makeEntity: () => SimActor, subtype
 
             breakable { for (i <- 1 to units) {                                       // minor loop - make actors
                 if (director.stopped) break
-                val (actor, isZombie) = if (zombies.isEmpty) (makeEntity (), false)   // make new actor
-                                        else (zombies.poll (), true)                  // reuse zombie actor
-
-                if (isZombie) actor.setArrivalT (director.clock)         // update zombie's re-creation time
+//                val (actor, isZombie) = if (zombies.isEmpty) (makeEntity (), false)   // make new actor
+//                                        else (zombies.poll (), true)                  // reuse zombie actor
+                val actor = makeEntity ()
+//                if (isZombie) actor.setArrivalT (director.clock)         // update zombie's re-creation time
                 actor.setMySource (this)                                 // actor's source
                 actor.setSubtype (subtype)                               // set the subtype
                 trace (this, "generates", actor, director.clock)
@@ -110,7 +110,7 @@ class Source (name: String, director: Model, makeEntity: () => SimActor, subtype
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     /** Clean-up all of the zombie actors for this source.  The model should
      *  call this method after all replications have been run.
-     */
+     
     def cleanup ()
     {
         while (! zombies.isEmpty) {
@@ -119,7 +119,7 @@ class Source (name: String, director: Model, makeEntity: () => SimActor, subtype
             z.interrupt ()                               // must interrupt zombie actor to terminate
         } // while
     } // cleanup
-
+     */
 } // Source class
 
 

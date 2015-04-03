@@ -53,7 +53,7 @@ class Gate (name: String, director: Model, line: WaitQueue, units: Int,
 
     private var _controller = -1;
 
-    var num = 0;
+//    var num = 0;
 
     var ServiceTime: Variate = null
 
@@ -104,25 +104,28 @@ class Gate (name: String, director: Model, line: WaitQueue, units: Int,
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     /** Release the Gate after service is finished (also check waiting queue).
      */
-    def release ()
+    var j = 0
+    def release (durat: Double): Double =
     {
+        var dur = 0.0
+        var end = director.clock + durat
         var count = 0
-        var duration = 0.0
-//        if (ServiceTime != null) duration = ServiceTime.gen
-//        tally (n2Release * duration)
-//        breakable { for (i <- 0 to n2Release) {
-        while (gateColor == green && ! line.isEmpty) {
-            val actor = director.theActor
-            trace (this, "releases", actor, director.clock)
+        val queuelength = line.size
+        while (director.clock < end && ! line.isEmpty ) {
             val waitingActor = line.dequeue ()
-            count += 1            
-//            if (i < n2Release) {
-            if (ServiceTime != null) duration = ServiceTime.gen
-            tally (duration)
-            schedule (duration)                  
-            yieldToDirector ()
-//            }
-        } // while
+            trace (this, "releases", waitingActor, director.clock)
+            if (ServiceTime != null) dur = ServiceTime.gen
+            if (director.clock + dur < end) {
+	    	count += 1
+            	tally (dur)
+            	schedule (dur)                  
+            	yieldToDirector ()
+	    } // if
+        } // while    
+        println ("released cars = " + count + " of " + queuelength)    
+        yieldToDirector ()
+        if (director.clock < end) end - director.clock
+        else 0.0
     } // release
 
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -130,17 +133,22 @@ class Gate (name: String, director: Model, line: WaitQueue, units: Int,
      */
     def act ()
     {
-        for (i <- 1 to units) {    
-//            if (controlled)        
-            flip ()
-            if (! _shut) release ()
-            director.animate (this, SetPaintNode, gateColor, Rectangle (), at)            
-            val dur = duration + (if (first) { first = false; offset1 + offset2 } else 0.0)
-            tally (dur)    
-            schedule (dur)
+        for (rep <- 1 to director.reps) {        
+            breakable { for (i <- 1 to units) {    
+                if (director.stopped) break
+                flip ()
+                director.animate (this, SetPaintNode, gateColor, Rectangle (), at)
+                var dur = duration + (if (first) { first = false; offset1 + offset2 } else 0.0)
+                if (! _shut) dur = release (dur)
+                            
+                tally (dur)    
+                schedule (dur)
+                yieldToDirector ()
+            } } // for
             yieldToDirector ()
-        } // for
-        yieldToDirector (true)    
+        }
+//        if (rep == director.reps) zombify ()
+//        yieldToDirector ()        
     } // act
 
     def setController (i: Int) { _controller = i }
