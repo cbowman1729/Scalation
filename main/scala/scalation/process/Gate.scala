@@ -128,6 +128,20 @@ class Gate (name: String, director: Model, line: WaitQueue, units: Int,
         else 0.0
     } // release
 
+    //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+    /** Release the Gate after service is finished (also check waiting queue).
+     */
+    def release ()
+    {
+        breakable { for (i <- 0 until cap) {
+            if (line.isEmpty) break
+            val actor = director.theActor
+            trace (this, "releases", actor, director.clock)
+            val waitingActor = line.dequeue ()
+            waitingActor.schedule (i * 500.0)
+        }} // for
+    } // release
+
     //::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     /** Specifies how the gate is controlled.
      */
@@ -139,7 +153,7 @@ class Gate (name: String, director: Model, line: WaitQueue, units: Int,
                 flip ()
                 director.animate (this, SetPaintNode, gateColor, Rectangle (), at)
                 var dur = duration + (if (first) { first = false; offset1 + offset2 } else 0.0)
-                if (! _shut) dur = release (dur)
+                if (! _shut) release ()                                  //dur = release (dur)
                             
                 tally (dur)    
                 schedule (dur)
